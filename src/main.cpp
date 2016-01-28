@@ -1,8 +1,7 @@
 #include <iostream>
 
-#include "TypeManager.hpp"
+#include "Manager.hpp"
 
 int main() {
-
     return 0;
 }

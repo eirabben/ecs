@@ -3,12 +3,17 @@
 #include <bitset>
 
 struct Entity {
+
+    explicit Entity(unsigned int id) : id(id) {
+    
+    }
+
     // The index in the component storage vectors 
     // might not be needed
     //int dataIndex; 
 
     // The id.
-    int id;
+    unsigned int id;
 
     // What components and tags the entity has
     std::bitset<32> bitset; 
