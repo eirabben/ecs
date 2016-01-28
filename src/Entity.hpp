@@ -1,23 +1,23 @@
 #pragma once
 
 #include <bitset>
+#include <string>
 
 struct Entity {
 
-    explicit Entity(unsigned int id) : id(id) {
-    
-    }
+    Entity() {}
+    Entity(unsigned int id) : id(id) {}
 
     // The index in the component storage vectors 
     // might not be needed
     //int dataIndex; 
-
+    
     // The id.
     unsigned int id;
 
     // What components and tags the entity has
-    std::bitset<32> bitset; 
+    std::bitset<32> bitset{0};
 
     // Is the entity alive
-    bool alive;
+    bool alive{true};
 };

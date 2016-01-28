@@ -1,113 +1,107 @@
 #pragma once
 
+#include "ComponentStorage.hpp"
+#include "Entity.hpp"
 #include "TypeManager.hpp"
 #include <vector>
-#include <tuple>
-#include <unordered_map>
 #include <memory>
 #include <algorithm>
 #include <utility>
 
-#include "Entity.hpp"
-#include "Component.hpp"
-
-template <typename... TArgs>
-struct ComponentStorage {
-    // Stores one vector for each component type
-    std::tuple<std::vector<TArgs>...> componentLists;
-
-    template <typename T>
-    void add(T component) {
-        get<T>().push_back(component);
-    }
-
-    template <typename T>
-    std::vector<T>& get() {
-        return std::get<std::vector<T>>(componentLists);
-    }
-
-};
-
-struct Signature {
-    std::bitset<8> bits;
-};
+constexpr int defaultCapacity{100};
 
 template <typename... TArgs>
 class Manager {
 
 public:
+    Manager() {
+        resize(defaultCapacity);
+    }
+
     // ENTITIES
 
     // @TODO: Decide if entities should be stored as a class or just IDs.
     // Also check if handles are a good thing to use for abstraction
-    Entity& createEntity() {
+    auto& createEntity() {
         auto id = m_nextId++;
 
-        Entity entity {id};
-        entity.bitset.reset();
-        entity.alive = true;
+        Entity entity{id};
+        entities[id] = entity;
 
-        m_entities.push_back(entity);
+        size++;
 
         return getEntity(id);
     }
 
     Entity& getEntity(unsigned int id) {
-        auto it = std::find_if(m_entities.begin(), m_entities.end(), [id](const Entity& entity) {
-            return id == entity.id;
-        });
-
-        // @TODO: This will cause errors if entity does not exist
-        return *it;
+        return entities[id];
     }
 
     // @TODO: There is a difference between kill and destroy and remove
     void removeEntity(unsigned int id) {
-
+        entities.erase(remove_if(std::begin(entities), std::end(entities), 
+                    [id](const Entity& entity) {
+                        return id == entity.id;
+                    }),
+                std::end(entities));
     }
     
     // COMPONENTS
 
-    template <typename T, typename... Args>
-    void addComponent(unsigned int id, Args&&... args) {
-        auto componentType = m_typeManager.getTypeFor<T>();
+    template <typename T>
+    void addComponent(unsigned int id, T component) {
+        m_componentStorage.template add<T>(component, id);
 
         auto& entity = getEntity(id);
+        auto componentType = m_typeManager.getTypeFor<T>();
         entity.bitset[componentType.id] = true;
-
-        auto component = std::make_unique<T>(std::forward<Args>(args)...);
     }
 
     template <typename T>
     bool hasComponent(unsigned int id) {
-    
+        auto& entity = getEntity(id);
+        auto componentType = m_typeManager.getTypeFor<T>();
+        return entity.bitset[componentType.id];
     }
 
     template <typename T>
     T& getComponent(unsigned int id) {
-        // Implementation detail. Abstract this
-        auto componentType = m_typeManager.getTypeFor<T>();
-
+        return m_componentStorage.template getComponent<T>(id);
     }
 
     template <typename T>
     void removeComponent(unsigned int id) {
-    
+        auto& entity = getEntity(id);
+        auto componentType = m_typeManager.getTypeFor<T>();
+        entity.bitset[componentType.id] = false;
+        m_componentStorage.template removeComponent<T>(id);
     }
+
 
     void forEntities();
     void forEntitiesMatching();
 
+    void resize(std::size_t newCapacity) {
+        entities.resize(newCapacity);
+        m_componentStorage.resize(newCapacity);
+
+        capacity = newCapacity;
+    }
+
+    std::vector<Entity> entities;
 private:
+    std::size_t capacity{0};
+    std::size_t size{0};
+    unsigned int m_nextId{0};
+
     // Entity vector
     // This needs to be sorted by dead or alive, or we need multiple vectors
     // for different states
-    std::vector<Entity> m_entities;
-    unsigned int m_nextId = 1;
 
-    // Component storage NEW
+    // Component storage
     ComponentStorage<TArgs...> m_componentStorage;
 
+    // Type manager
     TypeManager m_typeManager;
 };
 
