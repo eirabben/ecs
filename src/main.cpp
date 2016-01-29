@@ -19,10 +19,6 @@ int main() {
     // Create the manager
     Manager<CPosition, CVelocity> mgr;
 
-    // Create some components
-    CPosition pos;
-    CVelocity vel;
-
     // Create some entities and components
     auto& e1 = mgr.createEntity();
     mgr.addComponent<CPosition>(e1.id, {});
@@ -31,26 +27,11 @@ int main() {
     mgr.addComponent<CPosition>(e2.id, {});
     mgr.addComponent<CVelocity>(e2.id, {});
 
-    mgr.forEntities();
+    mgr.forEntities([](auto& entity) {
+        std::cout << "ID: " << entity.id << "\n";
+        std::cout << "Bitset: " << entity.bitset << "\n";
+    });
 
-    if (mgr.hasComponent<CPosition>(e1.id)) {
-        std::cout << "Yes\n";
-    }
-
-    mgr.removeComponent<CPosition>(e1.id);
-    if (mgr.hasComponent<CPosition>(e1.id)) {
-        std::cout << "Yes\n";
-    } else {
-        std::cout << "No\n";
-    }
-
-    auto& e3 = mgr.getEntity(e2.id);
-
-    auto& p = mgr.getComponent<CPosition>(e2.id);
-
-    mgr.removeEntity(e1.id);
-
-    mgr.forEntities();
 
     return 0;
 }

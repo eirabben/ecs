@@ -104,17 +104,22 @@ public:
         entity.bitset[componentType.bitIndex] = false;
     }
 
-    void forEntities() {
-        int i {0};
-        std::cout << "All entities:\n";
+    template <typename TF>
+    void forEntities(TF&& function) {
         for (auto& entity : entities) {
-            std::cout << "Index: " << i << ", ID: " << entity.id << "\n";
-            std::cout << "Bitset: " << entity.bitset << "\n";
-            i++;
+            function(entity);
         }
+
+        //int i {0};
+        //std::cout << "All entities:\n";
+        //for (auto& entity : entities) {
+            //std::cout << "Index: " << i << ", ID: " << entity.id << "\n";
+            //std::cout << "Bitset: " << entity.bitset << "\n";
+            //i++;
+        //}
     }
 
-    void forEntitiesMatching() {
+    void forEntitiesMatching(std::bitset<32> signature) {
     
     }
 
