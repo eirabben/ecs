@@ -1,7 +1,7 @@
 #include <iostream>
+#include <vector>
 
 #include "Manager.hpp"
-#include "IdPool.hpp"
 
 struct CPosition {
 
@@ -12,18 +12,20 @@ struct CVelocity {
 };
 
 int main() {
-
-    IdPool pool;
-
-    for (int i{0}; i < 100; i++) {
-        auto id = pool.create();
-        std::cout << id << "\n";
-    }
     
-    //// Create the manager
-    //Manager<CPosition, CVelocity> mgr;
+    // Create the manager
+    Manager<CPosition, CVelocity> mgr;
 
     //std::cout << "Initial mgr size: " << mgr.entities.size() << "\n";
+
+    for (int i {0}; i < 501; i++) {
+        auto& e = mgr.createEntity();
+        CPosition pos;
+        mgr.addComponent<CPosition>(e.id, pos);
+    }
+
+    std::cout << mgr.capacity << "\n";
+    std::cout << mgr.size << "\n";
 
     //// Create an entity
     //Entity& entity = mgr.createEntity();

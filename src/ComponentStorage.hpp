@@ -9,11 +9,13 @@
  */
 template <typename... TArgs>
 struct ComponentStorage {
+    using DataIndex = unsigned int;
+
     // Stores one vector for each component type
     std::tuple<std::vector<TArgs>...> componentLists;
 
     template <typename T>
-    void add(T component, unsigned int index) {
+    void add(T component, DataIndex index) {
         get<T>()[index] = component;
     }
 
@@ -23,19 +25,25 @@ struct ComponentStorage {
     }
 
     template <typename T>
-    T& getComponent(unsigned int index) {
+    T& getComponent(DataIndex index) {
         return get<T>()[index];
     }
 
     template <typename T>
-    void removeComponent(unsigned int index) {
+    void removeComponent(DataIndex index) {
         auto& v = get<T>();
-        v.erase(std::begin(v) + index);
+        v.erase(v.begin() + index);
+    }
+
+    void removeEntity(DataIndex index) {
+        Util::forTuple(componentLists, [index](auto& v) {
+            v.erase(v.begin() + index);
+        });
     }
 
     void resize(std::size_t newCapacity) {
-        Util::forTuple(componentLists, [newCapacity](auto& vec) {
-            vec.resize(newCapacity);
+        Util::forTuple(componentLists, [newCapacity](auto& v) {
+            v.resize(newCapacity);
         });
     }
 };

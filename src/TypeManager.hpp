@@ -7,13 +7,13 @@
 
 // @TODO: Use bitset size from settings
 
-using TypeId = unsigned int;
+using BitIndex = unsigned int;
 using Bitset = std::bitset<8>;
 
 struct Type {
-    Type(TypeId id, Bitset bit) : id(id), bit(bit) {}
+    Type(BitIndex bitIndex, Bitset bit) : bitIndex(bitIndex), bit(bit) {}
 
-    TypeId id;
+    BitIndex bitIndex;
     Bitset bit;
 };
 
@@ -25,9 +25,9 @@ public:
 
         auto it = m_types.find(typeHash);
         if (it == m_types.end()) {
-            Type type(m_nextId, m_nextBit);
+            Type type(m_nextIndex, m_nextBit);
 
-            m_nextId++;
+            m_nextIndex++;
             m_nextBit = m_nextBit << 1;
 
             m_types.insert(std::make_pair(typeHash, type));
@@ -41,6 +41,6 @@ public:
 private:
     std::unordered_map<std::size_t, Type> m_types;
 
-    TypeId m_nextId = 0;
+    BitIndex m_nextIndex = 0;
     Bitset m_nextBit = 1;
 };

@@ -2,13 +2,14 @@
 
 #include "ComponentStorage.hpp"
 #include "Entity.hpp"
+#include "IdPool.hpp"
 #include "TypeManager.hpp"
 #include <vector>
-#include <memory>
 #include <algorithm>
 #include <utility>
 
-constexpr int defaultCapacity{100};
+constexpr int defaultCapacity {100};
+constexpr int defaultCapacityIncrease {100};
 
 template <typename... TArgs>
 class Manager {
@@ -23,9 +24,11 @@ public:
     // @TODO: Decide if entities should be stored as a class or just IDs.
     // Also check if handles are a good thing to use for abstraction
     auto& createEntity() {
-        auto id = m_nextId++;
+        resizeIfNeeded(size + 1);
 
-        Entity entity{id};
+        auto id = idPool.create();
+
+        Entity entity {id};
         entities[id] = entity;
 
         size++;
@@ -39,69 +42,87 @@ public:
 
     // @TODO: There is a difference between kill and destroy and remove
     void removeEntity(unsigned int id) {
-        entities.erase(remove_if(std::begin(entities), std::end(entities), 
+        entities.erase(remove_if(entities.begin(), entities.end(), 
                     [id](const Entity& entity) {
                         return id == entity.id;
                     }),
-                std::end(entities));
+                entities.end());
+
+        componentStorage.removeEntity(id);
+
+        idPool.remove(id);
+        size--;
     }
     
     // COMPONENTS
 
     template <typename T>
     void addComponent(unsigned int id, T component) {
-        m_componentStorage.template add<T>(component, id);
+        componentStorage.template add<T>(component, id);
 
         auto& entity = getEntity(id);
-        auto componentType = m_typeManager.getTypeFor<T>();
-        entity.bitset[componentType.id] = true;
+        auto componentType = typeManager.getTypeFor<T>();
+        entity.bitset[componentType.bitIndex] = true;
     }
 
     template <typename T>
     bool hasComponent(unsigned int id) {
         auto& entity = getEntity(id);
-        auto componentType = m_typeManager.getTypeFor<T>();
-        return entity.bitset[componentType.id];
+        auto componentType = typeManager.getTypeFor<T>();
+        return entity.bitset[componentType.bitIndex];
     }
 
     template <typename T>
     T& getComponent(unsigned int id) {
-        return m_componentStorage.template getComponent<T>(id);
+        return componentStorage.template getComponent<T>(id);
     }
 
     template <typename T>
     void removeComponent(unsigned int id) {
         auto& entity = getEntity(id);
-        auto componentType = m_typeManager.getTypeFor<T>();
-        entity.bitset[componentType.id] = false;
-        m_componentStorage.template removeComponent<T>(id);
+        auto componentType = typeManager.getTypeFor<T>();
+        entity.bitset[componentType.bitIndex] = false;
+        componentStorage.template removeComponent<T>(id);
     }
 
+    void forEntities() {
+    
+    }
 
-    void forEntities();
-    void forEntitiesMatching();
+    void forEntitiesMatching() {
+    
+    }
 
     void resize(std::size_t newCapacity) {
         entities.resize(newCapacity);
-        m_componentStorage.resize(newCapacity);
+        componentStorage.resize(newCapacity);
 
         capacity = newCapacity;
     }
 
-    std::vector<Entity> entities;
+    void resizeIfNeeded(std::size_t newSize) {
+        if (newSize > capacity) {
+            resize(capacity + defaultCapacityIncrease);
+        }
+    }
+
+    // @TODO: These are private. They are here for debugging.
+    std::size_t capacity {0};
+    std::size_t size {0};
 private:
-    std::size_t capacity{0};
-    std::size_t size{0};
-    unsigned int m_nextId{0};
 
     // Entity vector
     // This needs to be sorted by dead or alive, or we need multiple vectors
     // for different states
+    std::vector<Entity> entities;
 
     // Component storage
-    ComponentStorage<TArgs...> m_componentStorage;
+    ComponentStorage<TArgs...> componentStorage;
 
     // Type manager
-    TypeManager m_typeManager;
+    TypeManager typeManager;
+
+    // ID pool
+    IdPool idPool;
 };
 
