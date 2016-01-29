@@ -11,46 +11,46 @@ struct CVelocity {
 
 };
 
+void init();
+void loop();
+
 int main() {
     
     // Create the manager
     Manager<CPosition, CVelocity> mgr;
 
-    //std::cout << "Initial mgr size: " << mgr.entities.size() << "\n";
+    // Create some components
+    CPosition pos;
+    CVelocity vel;
 
-    for (int i {0}; i < 501; i++) {
-        auto& e = mgr.createEntity();
-        CPosition pos;
-        mgr.addComponent<CPosition>(e.id, pos);
+    // Create some entities and components
+    auto& e1 = mgr.createEntity();
+    mgr.addComponent<CPosition>(e1.id, {});
+
+    auto& e2 = mgr.createEntity();
+    mgr.addComponent<CPosition>(e2.id, {});
+    mgr.addComponent<CVelocity>(e2.id, {});
+
+    mgr.forEntities();
+
+    if (mgr.hasComponent<CPosition>(e1.id)) {
+        std::cout << "Yes\n";
     }
 
-    std::cout << mgr.capacity << "\n";
-    std::cout << mgr.size << "\n";
+    mgr.removeComponent<CPosition>(e1.id);
+    if (mgr.hasComponent<CPosition>(e1.id)) {
+        std::cout << "Yes\n";
+    } else {
+        std::cout << "No\n";
+    }
 
-    //// Create an entity
-    //Entity& entity = mgr.createEntity();
-    //std::cout << entity.id << "\n";
-    //std::cout << entity.bitset << "\n";
+    auto& e3 = mgr.getEntity(e2.id);
 
-    //std::cout << "After add mgr size: " << mgr.entities.size() << "\n";
+    auto& p = mgr.getComponent<CPosition>(e2.id);
 
-    //// Add a component
-    //CPosition pos;
-    //CVelocity vel;
-    //mgr.addComponent<CPosition>(entity.id, pos);
-    //mgr.addComponent<CVelocity>(entity.id, vel);
-    //std::cout << entity.bitset << "\n";
+    mgr.removeEntity(e1.id);
 
-    //// Check for component
-    //if (mgr.hasComponent<CPosition>(entity.id)) {
-        //std::cout << "Has position\n";
-    //}
-
-    //// Remove component
-    //mgr.removeComponent<CVelocity>(entity.id);
-    //std::cout << entity.bitset << "\n";
-
-    //mgr.removeEntity(entity.id);
+    mgr.forEntities();
 
     return 0;
 }

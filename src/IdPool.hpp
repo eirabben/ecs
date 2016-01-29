@@ -2,6 +2,8 @@
 
 #include <vector>
 
+constexpr unsigned int firstId = 0;
+
 /**
  * Keeps track of used and unused IDs, helps avoid making new IDs when this
  * is not needed.
@@ -35,13 +37,13 @@ public:
     }
 
     void reset() {
-        nextId = 0;
+        nextId = firstId;
         pool.clear();
         free.clear();
     }
 
 private:
-    EntityId nextId {0};
+    EntityId nextId {firstId};
     // std::size_t capacity {0};
 
     std::vector<EntityId> pool;

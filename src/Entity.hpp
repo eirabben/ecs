@@ -4,16 +4,17 @@
 #include <string>
 
 struct Entity {
+    using EntityId = unsigned int;
+    using DataIndex = unsigned int;
 
     Entity() {}
-    Entity(unsigned int id) : id(id) {}
+    Entity(EntityId id) : id(id) {}
 
-    // The index in the component storage vectors 
-    // might not be needed
-    //int dataIndex; 
-    
     // The id.
-    unsigned int id;
+    EntityId id;
+
+    // The index in the data vectors
+    DataIndex dataIndex;
 
     // What components and tags the entity has
     std::bitset<32> bitset{0};

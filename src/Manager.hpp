@@ -7,6 +7,8 @@
 #include <vector>
 #include <algorithm>
 #include <utility>
+#include <iostream>
+#include <cassert>
 
 constexpr int defaultCapacity {100};
 constexpr int defaultCapacityIncrease {100};
@@ -24,12 +26,12 @@ public:
     // @TODO: Decide if entities should be stored as a class or just IDs.
     // Also check if handles are a good thing to use for abstraction
     auto& createEntity() {
-        resizeIfNeeded(size + 1);
+        resizeIfNeeded(1);
 
         auto id = idPool.create();
 
         Entity entity {id};
-        entities[id] = entity;
+        entities.push_back(entity);
 
         size++;
 
@@ -37,16 +39,25 @@ public:
     }
 
     Entity& getEntity(unsigned int id) {
-        return entities[id];
+        assert(id < entities.size());
+
+        auto it = std::find_if(entities.begin(), entities.end(),
+            [id](const Entity& entity) {
+                return id == entity.id;
+            });
+
+        return *it;
     }
 
     // @TODO: There is a difference between kill and destroy and remove
     void removeEntity(unsigned int id) {
+        assert(id < entities.size());
+
         entities.erase(remove_if(entities.begin(), entities.end(), 
-                    [id](const Entity& entity) {
-                        return id == entity.id;
-                    }),
-                entities.end());
+            [id](const Entity& entity) {
+                return id == entity.id;
+            }),
+            entities.end());
 
         componentStorage.removeEntity(id);
 
@@ -58,6 +69,8 @@ public:
 
     template <typename T>
     void addComponent(unsigned int id, T component) {
+        assert(id < entities.size());
+
         componentStorage.template add<T>(component, id);
 
         auto& entity = getEntity(id);
@@ -67,6 +80,8 @@ public:
 
     template <typename T>
     bool hasComponent(unsigned int id) {
+        assert(id < entities.size());
+
         auto& entity = getEntity(id);
         auto componentType = typeManager.getTypeFor<T>();
         return entity.bitset[componentType.bitIndex];
@@ -74,19 +89,29 @@ public:
 
     template <typename T>
     T& getComponent(unsigned int id) {
+        assert(hasComponent<T>(id));
         return componentStorage.template getComponent<T>(id);
     }
 
     template <typename T>
     void removeComponent(unsigned int id) {
+        assert(id < entities.size());
+
+        componentStorage.template removeComponent<T>(id);
+
         auto& entity = getEntity(id);
         auto componentType = typeManager.getTypeFor<T>();
         entity.bitset[componentType.bitIndex] = false;
-        componentStorage.template removeComponent<T>(id);
     }
 
     void forEntities() {
-    
+        int i {0};
+        std::cout << "All entities:\n";
+        for (auto& entity : entities) {
+            std::cout << "Index: " << i << ", ID: " << entity.id << "\n";
+            std::cout << "Bitset: " << entity.bitset << "\n";
+            i++;
+        }
     }
 
     void forEntitiesMatching() {
@@ -94,14 +119,18 @@ public:
     }
 
     void resize(std::size_t newCapacity) {
-        entities.resize(newCapacity);
-        componentStorage.resize(newCapacity);
+        assert(newCapacity > capacity);
 
+        // We now call push_back or emplace_back. This means the vector will
+        // be resized each time an entity is added or removed.
+        //entities.resize(newCapacity);
+
+        componentStorage.resize(newCapacity);
         capacity = newCapacity;
     }
 
-    void resizeIfNeeded(std::size_t newSize) {
-        if (newSize > capacity) {
+    void resizeIfNeeded(std::size_t numNewEntities) {
+        if (size + numNewEntities > capacity) {
             resize(capacity + defaultCapacityIncrease);
         }
     }
@@ -109,12 +138,12 @@ public:
     // @TODO: These are private. They are here for debugging.
     std::size_t capacity {0};
     std::size_t size {0};
+    std::vector<Entity> entities;
 private:
 
     // Entity vector
     // This needs to be sorted by dead or alive, or we need multiple vectors
-    // for different states
-    std::vector<Entity> entities;
+    // for different states. Might use entity cache.
 
     // Component storage
     ComponentStorage<TArgs...> componentStorage;
