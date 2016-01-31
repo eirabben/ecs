@@ -6,6 +6,7 @@
 
 /**
  * Stores one vector for each component type
+ * See this for variadic template unpacking: http://stackoverflow.com/q/19463710
  */
 template <typename... TArgs>
 struct ComponentStorage {

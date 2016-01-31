@@ -4,6 +4,7 @@
 #include "Entity.hpp"
 #include "IdPool.hpp"
 #include "TypeManager.hpp"
+#include <initializer_list>
 #include <vector>
 #include <algorithm>
 #include <utility>
@@ -119,8 +120,18 @@ public:
         //}
     }
 
-    void forEntitiesMatching(std::bitset<32> signature) {
-    
+    template <typename TF>
+    void forEntitiesMatching(std::bitset<32> signature, TF&& function) {
+        forEntities([signature, &function](auto& entity) {
+            if ((signature & entity.bitset) == signature) {
+                function(entity);
+            }
+        });
+    }
+
+    template <typename TF, typename... T>
+    void testFunc(TF&& function) {
+        auto initList = {(typeManager.getTypeFor<T>())...};
     }
 
     void resize(std::size_t newCapacity) {

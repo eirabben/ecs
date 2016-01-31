@@ -27,10 +27,19 @@ int main() {
     mgr.addComponent<CPosition>(e2.id, {});
     mgr.addComponent<CVelocity>(e2.id, {});
 
-    mgr.forEntities([](auto& entity) {
+    //mgr.forEntities([](auto& entity) {
+        //std::cout << "ID: " << entity.id << "\n";
+        //std::cout << "Bitset: " << entity.bitset << "\n";
+    //});
+
+    std::bitset<32> bitset {1};
+    std::cout << "InnnBitset: " << bitset << "\n";
+    mgr.forEntitiesMatching(bitset, [](auto& entity) {
         std::cout << "ID: " << entity.id << "\n";
         std::cout << "Bitset: " << entity.bitset << "\n";
     });
+
+
 
 
     return 0;
