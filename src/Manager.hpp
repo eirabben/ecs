@@ -5,6 +5,7 @@
 #include "IdPool.hpp"
 #include "Signature.hpp"
 #include "TypeManager.hpp"
+
 #include <initializer_list>
 #include <vector>
 #include <algorithm>
@@ -138,11 +139,6 @@ public:
         });
     }
 
-    template <typename TF, typename... T>
-    void testFunc(TF&& function) {
-        auto initList = {(typeManager.getTypeFor<T>())...};
-    }
-
     void resize(std::size_t newCapacity) {
         assert(newCapacity > capacity);
 
@@ -160,15 +156,14 @@ public:
         }
     }
 
-    // @TODO: These are private. They are here for debugging.
+private:
     std::size_t capacity {0};
     std::size_t size {0};
-    std::vector<Entity> entities;
-private:
 
     // Entity vector
-    // This needs to be sorted by dead or alive, or we need multiple vectors
+    // @TODO: This needs to be sorted by dead or alive, or we need multiple vectors
     // for different states. Might use entity cache.
+    std::vector<Entity> entities;
 
     // Component storage
     ComponentStorage<TArgs...> componentStorage;
