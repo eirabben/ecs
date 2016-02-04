@@ -1,6 +1,6 @@
 #pragma once
 
-#include <bitset>
+#include "Bitset.hpp"
 #include <string>
 
 struct Entity {
@@ -17,8 +17,11 @@ struct Entity {
     DataIndex dataIndex;
 
     // What components and tags the entity has
-    std::bitset<32> bitset{0};
+    Bitset bitset{0};
 
     // Is the entity alive
     bool alive{true};
+
+    // Temporary name
+    std::string name;
 };

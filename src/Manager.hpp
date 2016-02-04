@@ -3,6 +3,7 @@
 #include "ComponentStorage.hpp"
 #include "Entity.hpp"
 #include "IdPool.hpp"
+#include "Bitset.hpp"
 #include "TypeManager.hpp"
 #include <initializer_list>
 #include <vector>
@@ -96,7 +97,7 @@ public:
 
     template <typename T>
     void removeComponent(unsigned int id) {
-        assert(id < entities.size());
+        assert(hasComponent<T>(id));
 
         componentStorage.template removeComponent<T>(id);
 
@@ -105,26 +106,32 @@ public:
         entity.bitset[componentType.bitIndex] = false;
     }
 
+    template <typename... T>
+    Bitset getSignature() {
+        // Using an initializer list to iterate over types. The bit of each type will be added to the bitset.
+        Bitset signature;
+        auto list = {(signature = (signature | typeManager.getTypeFor<T>().bit))...};
+        return signature;
+    }
+
+    template <typename... T>
+    bool matchesSignature(Entity entity) {
+        auto signature = getSignature<T...>();
+        return (signature & entity.bitset) == signature;
+    }
+
     template <typename TF>
     void forEntities(TF&& function) {
         for (auto& entity : entities) {
             function(entity);
         }
-
-        //int i {0};
-        //std::cout << "All entities:\n";
-        //for (auto& entity : entities) {
-            //std::cout << "Index: " << i << ", ID: " << entity.id << "\n";
-            //std::cout << "Bitset: " << entity.bitset << "\n";
-            //i++;
-        //}
     }
 
-    template <typename TF>
-    void forEntitiesMatching(std::bitset<32> signature, TF&& function) {
-        forEntities([signature, &function](auto& entity) {
-            if ((signature & entity.bitset) == signature) {
-                function(entity);
+    template <typename... T, typename TF>
+    void forEntitiesMatching(TF&& function) {
+        forEntities([this, &function](auto& entity) {
+            if (matchesSignature<T...>(entity)) {
+                function(entity, getComponent<T...>(entity.id));
             }
         });
     }

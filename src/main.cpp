@@ -4,43 +4,51 @@
 #include "Manager.hpp"
 
 struct CPosition {
-
+    float x {0};
+    float y {0};
 };
 
 struct CVelocity {
+    float vel {0};
+};
 
+using EManager = Manager<CPosition, CVelocity>;
+
+struct PSystem {
+
+    void update(EManager& mgr) {
+        mgr.forEntitiesMatching<CPosition>([](auto& entity, auto& pos) {
+            std::cout << entity.name << "\n";
+            std::cout << pos.x << "\n";
+        });
+        
+    }
 };
 
 void init();
 void loop();
 
 int main() {
-    
     // Create the manager
-    Manager<CPosition, CVelocity> mgr;
+    EManager mgr;
 
-    // Create some entities and components
+    auto& e0 = mgr.createEntity();
+    e0.name = "Entity 0";
+    CPosition pos;
+    pos.x = 4;
+    mgr.addComponent<CPosition>(e0.id, pos);
+    mgr.addComponent<CVelocity>(e0.id, {});
+
     auto& e1 = mgr.createEntity();
+    e1.name = "Entity 1";
     mgr.addComponent<CPosition>(e1.id, {});
 
     auto& e2 = mgr.createEntity();
-    mgr.addComponent<CPosition>(e2.id, {});
+    e2.name = "Entity 2";
     mgr.addComponent<CVelocity>(e2.id, {});
 
-    //mgr.forEntities([](auto& entity) {
-        //std::cout << "ID: " << entity.id << "\n";
-        //std::cout << "Bitset: " << entity.bitset << "\n";
-    //});
-
-    std::bitset<32> bitset {1};
-    std::cout << "InnnBitset: " << bitset << "\n";
-    mgr.forEntitiesMatching(bitset, [](auto& entity) {
-        std::cout << "ID: " << entity.id << "\n";
-        std::cout << "Bitset: " << entity.bitset << "\n";
-    });
-
-
-
+    PSystem sys;
+    sys.update(mgr);
 
     return 0;
 }
