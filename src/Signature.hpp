@@ -2,7 +2,8 @@
 
 #include <bitset>
 
-struct Signature {
-    std::bitset<8> bits;
-};
+namespace ecs {
 
+using Signature = std::bitset<32>;
+
+}

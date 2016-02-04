@@ -12,11 +12,12 @@ struct CVelocity {
     float vel {0};
 };
 
-using EManager = Manager<CPosition, CVelocity>;
+using Manager = ecs::Manager<CPosition, CVelocity>;
+using Entity = ecs::Entity;
 
 struct PSystem {
 
-    void update(EManager& mgr) {
+    void update(Manager& mgr) {
         mgr.forEntitiesMatching<CPosition>([](auto& entity, auto& pos) {
             std::cout << entity.name << "\n";
             std::cout << pos.x << "\n";
@@ -30,7 +31,7 @@ void loop();
 
 int main() {
     // Create the manager
-    EManager mgr;
+    Manager mgr;
 
     auto& e0 = mgr.createEntity();
     e0.name = "Entity 0";

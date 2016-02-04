@@ -2,7 +2,9 @@
 
 #include <vector>
 
-constexpr unsigned int firstId = 0;
+namespace ecs {
+
+constexpr unsigned int firstId {0};
 
 /**
  * Keeps track of used and unused IDs, helps avoid making new IDs when this
@@ -50,3 +52,5 @@ private:
     std::vector<EntityId> free;
 
 };
+
+}

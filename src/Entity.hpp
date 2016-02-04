@@ -1,7 +1,9 @@
 #pragma once
 
-#include "Bitset.hpp"
+#include "Signature.hpp"
 #include <string>
+
+namespace ecs {
 
 struct Entity {
     using EntityId = unsigned int;
@@ -17,7 +19,7 @@ struct Entity {
     DataIndex dataIndex;
 
     // What components and tags the entity has
-    Bitset bitset{0};
+    Signature signature{0};
 
     // Is the entity alive
     bool alive{true};
@@ -25,3 +27,5 @@ struct Entity {
     // Temporary name
     std::string name;
 };
+
+}

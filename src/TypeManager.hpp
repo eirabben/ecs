@@ -1,20 +1,19 @@
 #pragma once
 
+#include "Signature.hpp"
 #include <unordered_map>
-#include <bitset>
 #include <typeindex>
 #include <utility>
 
-// @TODO: Use bitset size from settings
+namespace ecs {
 
 using BitIndex = unsigned int;
-using Bitset = std::bitset<8>;
 
 struct Type {
-    Type(BitIndex bitIndex, Bitset bit) : bitIndex(bitIndex), bit(bit) {}
+    Type(BitIndex bitIndex, Signature bit) : bitIndex(bitIndex), bit(bit) {}
 
     BitIndex bitIndex;
-    Bitset bit;
+    Signature bit;
 };
 
 class TypeManager {
@@ -42,5 +41,7 @@ private:
     std::unordered_map<std::size_t, Type> m_types;
 
     BitIndex m_nextIndex = 0;
-    Bitset m_nextBit = 1;
+    Signature m_nextBit = 1;
 };
+
+}

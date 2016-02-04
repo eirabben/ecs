@@ -4,7 +4,7 @@
 #include <tuple>
 #include <utility>
 
-namespace Util {
+namespace util {
 
     // Tuple loop code from here: http://codereview.stackexchange.com/a/67394
 

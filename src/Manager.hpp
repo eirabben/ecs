@@ -3,7 +3,7 @@
 #include "ComponentStorage.hpp"
 #include "Entity.hpp"
 #include "IdPool.hpp"
-#include "Bitset.hpp"
+#include "Signature.hpp"
 #include "TypeManager.hpp"
 #include <initializer_list>
 #include <vector>
@@ -11,6 +11,8 @@
 #include <utility>
 #include <iostream>
 #include <cassert>
+
+namespace ecs {
 
 constexpr int defaultCapacity {100};
 constexpr int defaultCapacityIncrease {100};
@@ -77,7 +79,7 @@ public:
 
         auto& entity = getEntity(id);
         auto componentType = typeManager.getTypeFor<T>();
-        entity.bitset[componentType.bitIndex] = true;
+        entity.signature[componentType.bitIndex] = true;
     }
 
     template <typename T>
@@ -86,7 +88,7 @@ public:
 
         auto& entity = getEntity(id);
         auto componentType = typeManager.getTypeFor<T>();
-        return entity.bitset[componentType.bitIndex];
+        return entity.signature[componentType.bitIndex];
     }
 
     template <typename T>
@@ -103,13 +105,13 @@ public:
 
         auto& entity = getEntity(id);
         auto componentType = typeManager.getTypeFor<T>();
-        entity.bitset[componentType.bitIndex] = false;
+        entity.signature[componentType.bitIndex] = false;
     }
 
     template <typename... T>
-    Bitset getSignature() {
+    Signature getSignature() {
         // Using an initializer list to iterate over types. The bit of each type will be added to the bitset.
-        Bitset signature;
+        Signature signature;
         auto list = {(signature = (signature | typeManager.getTypeFor<T>().bit))...};
         return signature;
     }
@@ -117,7 +119,7 @@ public:
     template <typename... T>
     bool matchesSignature(Entity entity) {
         auto signature = getSignature<T...>();
-        return (signature & entity.bitset) == signature;
+        return (signature & entity.signature) == signature;
     }
 
     template <typename TF>
@@ -178,3 +180,4 @@ private:
     IdPool idPool;
 };
 
+}

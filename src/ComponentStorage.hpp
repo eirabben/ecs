@@ -4,6 +4,8 @@
 #include <tuple>
 #include "Util.hpp"
 
+namespace ecs {
+
 /**
  * Stores one vector for each component type
  * See this for variadic template unpacking: http://stackoverflow.com/q/19463710
@@ -37,14 +39,16 @@ struct ComponentStorage {
     }
 
     void removeEntity(DataIndex index) {
-        Util::forTuple(componentLists, [index](auto& v) {
+        util::forTuple(componentLists, [index](auto& v) {
             v.erase(v.begin() + index);
         });
     }
 
     void resize(std::size_t newCapacity) {
-        Util::forTuple(componentLists, [newCapacity](auto& v) {
+        util::forTuple(componentLists, [newCapacity](auto& v) {
             v.resize(newCapacity);
         });
     }
 };
+
+}
