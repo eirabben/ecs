@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Signature.hpp"
+#include "Bitset.hpp"
 #include <string>
 
 namespace ecs {
@@ -19,7 +19,7 @@ struct Entity {
     DataIndex dataIndex;
 
     // What components and tags the entity has
-    Signature signature{0};
+    Bitset bitset{0};
 
     // Is the entity alive
     bool alive{true};

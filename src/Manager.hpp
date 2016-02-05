@@ -3,7 +3,7 @@
 #include "ComponentStorage.hpp"
 #include "Entity.hpp"
 #include "IdPool.hpp"
-#include "Signature.hpp"
+#include "Bitset.hpp"
 #include "TypeManager.hpp"
 
 #include <initializer_list>
@@ -18,10 +18,39 @@ namespace ecs {
 constexpr int defaultCapacity {100};
 constexpr int defaultCapacityIncrease {100};
 
+template <typename... Ts>
+struct TypeList {
+    static constexpr std::size_t size {sizeof...(Ts)};
+};
+
+
+template <typename... Ts>
+struct TSig {
+    std::tuple<Ts...> types;
+
+    static Bitset getBitset() {
+        Bitset bitset;
+        auto list = {(bitset = (bitset | TypeManager::getTypeFor<Ts>().bit))...};
+        return bitset;
+    }
+};
+
+template <typename... Ts>
+struct Signature {
+    static Bitset getBitset() {
+        Bitset bitset;
+        auto list = {(bitset = (bitset | TypeManager::getTypeFor<Ts>().bit))...};
+        return bitset;
+    }
+};
+
 template <typename... TArgs>
 class Manager {
 
+using ThisType = Manager<TArgs...>;
+
 public:
+
     Manager() {
         resize(defaultCapacity);
     }
@@ -79,8 +108,8 @@ public:
         componentStorage.template add<T>(component, id);
 
         auto& entity = getEntity(id);
-        auto componentType = typeManager.getTypeFor<T>();
-        entity.signature[componentType.bitIndex] = true;
+        auto componentType = TypeManager::getTypeFor<T>();
+        entity.bitset[componentType.bitIndex] = true;
     }
 
     template <typename T>
@@ -88,8 +117,8 @@ public:
         assert(id < entities.size());
 
         auto& entity = getEntity(id);
-        auto componentType = typeManager.getTypeFor<T>();
-        return entity.signature[componentType.bitIndex];
+        auto componentType = TypeManager::getTypeFor<T>();
+        return entity.bitset[componentType.bitIndex];
     }
 
     template <typename T>
@@ -105,22 +134,22 @@ public:
         componentStorage.template removeComponent<T>(id);
 
         auto& entity = getEntity(id);
-        auto componentType = typeManager.getTypeFor<T>();
-        entity.signature[componentType.bitIndex] = false;
+        auto componentType = TypeManager::getTypeFor<T>();
+        entity.bitset[componentType.bitIndex] = false;
     }
 
     template <typename... T>
-    Signature getSignature() {
+    Bitset getBitset() {
         // Using an initializer list to iterate over types. The bit of each type will be added to the bitset.
-        Signature signature;
-        auto list = {(signature = (signature | typeManager.getTypeFor<T>().bit))...};
-        return signature;
+        Bitset bitset;
+        auto list = {(bitset = (bitset | TypeManager::getTypeFor<T>().bit))...};
+        return bitset;
     }
 
-    template <typename... T>
+    template <typename T>
     bool matchesSignature(Entity entity) {
-        auto signature = getSignature<T...>();
-        return (signature & entity.signature) == signature;
+        auto bitset = T::getBitset();
+        return (bitset & entity.bitset) == bitset;
     }
 
     template <typename TF>
@@ -130,14 +159,31 @@ public:
         }
     }
 
-    template <typename... T, typename TF>
+    template <typename T, typename TF>
     void forEntitiesMatching(TF&& function) {
         forEntities([this, &function](auto& entity) {
-            if (matchesSignature<T...>(entity)) {
-                function(entity, getComponent<T...>(entity.id));
+            if (matchesSignature<T>(entity)) {
+                expandSignatureCall<T>(entity, function);
             }
         });
     }
+
+    template <typename... Ts>
+    struct ExpandCallHelper;
+
+    template <typename T, typename TF>
+    void expandSignatureCall(Entity& entity, TF&& function) {
+        using Helper = util::Rename<ExpandCallHelper, T>;
+        Helper::call(entity, *this, function);
+    }
+
+    template <typename... Ts>
+    struct ExpandCallHelper {
+        template <typename TF>
+        static void call(Entity& entity, ThisType& mgr, TF&& function) {
+            function(entity, mgr.getComponent<Ts>(entity.id)...);
+        }
+    };
 
     void resize(std::size_t newCapacity) {
         assert(newCapacity > capacity);
@@ -167,9 +213,6 @@ private:
 
     // Component storage
     ComponentStorage<TArgs...> componentStorage;
-
-    // Type manager
-    TypeManager typeManager;
 
     // ID pool
     IdPool idPool;
