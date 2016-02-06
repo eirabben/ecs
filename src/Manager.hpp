@@ -44,7 +44,7 @@ public:
     auto getEntity(EntityId id) {
         assert(id < entities.size());
 
-        Entity entity {id};
+        Entity entity {id, this};
         return entity;
     }
 
@@ -58,6 +58,10 @@ public:
         entityBitsets[id].reset();
         idPool.remove(id);
         size--;
+    }
+
+    void removeEntity(Entity& entity) {
+        removeEntity(entity.id);
     }
     
     // COMPONENTS
@@ -92,7 +96,6 @@ public:
 
         componentStorage.template removeComponent<TComponent>(id);
 
-        auto& entity = getEntity(id);
         auto componentType = TypeManager::getTypeFor<TComponent>();
         entityBitsets[id][componentType.bitIndex] = false;
     }
@@ -107,7 +110,7 @@ public:
 
     template <typename TFunction>
     void forEntities(TFunction&& function) {
-        for (auto& entity : entities) {
+        for (auto entity : entities) {
             function(entity);
         }
     }

@@ -11,7 +11,7 @@ public:
     explicit EntityHandle(EntityId id, Manager* manager) : id(id), manager(manager) {}
 
     template <typename TComponent>
-    EntityHandle& addComponent(TComponent& component) {
+    EntityHandle& addComponent(TComponent component) {
         manager->template addComponent<TComponent>(id, component);
         return *this;
     }

@@ -6,50 +6,58 @@
 struct CPosition {
     float x {0};
     float y {0};
+
+    CPosition() {}
+    CPosition(float x, float y) : x(x), y(y) {}
 };
 
 struct CVelocity {
     float vel {0};
+
+    CVelocity() {}
+    CVelocity(float vel) : vel(vel) {}
 };
 
 using Manager = ecs::Manager<CPosition, CVelocity>;
 using Entity = ecs::Entity<Manager>;
 
-struct PSystem {
+struct Processor {
     using Signature = ecs::Signature<CPosition>;
 
     void update(Manager& mgr) {
         mgr.forEntitiesMatching<Signature>(
         [](auto entity, auto& pos) {
-            std::cout << "Whaaat?\n";
-            std::cout << pos.x << "\n";
+            std::cout << "Position: " << pos.x << ", " << pos.y << "\n";
         });
     }
 };
 
 int main() {
-    // Create the manager
-    Manager mgr;
+    // Create a manager object
+    Manager manager;
 
-    auto e0 = mgr.createEntity();
-    CPosition pos;
-    pos.x = 4;
-    mgr.addComponent<CPosition>(e0.id, pos);
-    mgr.addComponent<CVelocity>(e0.id, {});
+    // Create an entity, and add some components
+    auto entity = manager.createEntity()
+        .addComponent<CPosition>({1.0f, 4.0f})
+        .addComponent<CVelocity>({});
 
-    auto e1 = mgr.createEntity();
-    mgr.addComponent<CPosition>(e1.id, {});
+    // See if an entity has a component
+    if (entity.hasComponent<CVelocity>()) {
+        // Do stuff
+    }
 
-    auto ePos = mgr.getComponent<CPosition>(e1.id);
+    // Access a component
+    auto& pos = entity.getComponent<CPosition>();
 
-    auto e2 = mgr.createEntity();
-    mgr.addComponent<CVelocity>(e2.id, {});
+    // Remove a component
+    entity.removeComponent<CVelocity>();
 
-    auto e3 = mgr.createEntity();
-    mgr.addComponent<CPosition>(e3.id, {});
+    // Iterate over entities with lambdas
+    Processor processor;
+    processor.update(manager);
 
-    PSystem sys;
-    sys.update(mgr);
+    // Remove an entity
+    manager.removeEntity(entity);
 
     return 0;
 }
