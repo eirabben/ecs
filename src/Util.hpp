@@ -23,6 +23,8 @@ namespace util {
                                   std::make_index_sequence<N>{});
     }
 
+    // Metaprogramming rename functionality
+
     template <template <typename...> class TNewName, typename T>
     struct RenameHelper;
 

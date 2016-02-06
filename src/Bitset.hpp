@@ -1,9 +1,10 @@
 #pragma once
 
+#include "Settings.hpp"
 #include <bitset>
 
 namespace ecs {
 
-using Bitset = std::bitset<32>;
+using Bitset = std::bitset<defaultBitsetSize>;
 
 }

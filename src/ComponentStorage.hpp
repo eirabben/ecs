@@ -1,8 +1,9 @@
 #pragma once
 
-#include <vector>
-#include <tuple>
+#include "Bitset.hpp"
 #include "Util.hpp"
+#include <tuple>
+#include <vector>
 
 namespace ecs {
 
