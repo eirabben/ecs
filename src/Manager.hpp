@@ -3,6 +3,7 @@
 #include "Bitset.hpp"
 #include "ComponentStorage.hpp"
 #include "Entity.hpp"
+#include "EntityHandle.hpp"
 #include "IdPool.hpp"
 #include "Settings.hpp"
 #include "Signature.hpp"
@@ -13,13 +14,16 @@
 #include <utility>
 #include <cassert>
 
+constexpr std::size_t defaultCapacity {100};
+constexpr std::size_t defaultCapacityIncrease {100};
+
 namespace ecs {
 
 template <typename... TArgs>
 class Manager {
-using ThisType = Manager<TArgs...>;
-using EntityId = unsigned int;
-using Entity = Entity<ThisType>;
+    using ThisType = Manager<TArgs...>;
+    using EntityHandleType = EntityHandle<ThisType>;
+    using EntityId = unsigned int;
 
 public:
     Manager() {
@@ -28,34 +32,36 @@ public:
 
     // ENTITIES
 
-    // @TODO: Decide if entities should be stored as a class or just IDs.
-    // Also check if handles are a good thing to use for abstraction
     auto createEntity() {
         resizeIfNeeded(1);
 
         auto id = idPool.create();
-        entities.push_back(id);
+        Entity entity {id};
+        entities[id] = entity;
 
         size++;
 
         return getEntity(id);
     }
 
-    auto getEntity(EntityId id) {
-        assert(id < entities.size());
+    auto createHandle() {
+        SlimHandle h;
+        EntityHandleType eh {*this, h};
+    }
 
-        Entity entity {id, this};
-        return entity;
+    auto getEntity(EntityId id) {
+        assert(id < size);
+
+        return entities[id];
     }
 
     // @TODO: There is a difference between kill and destroy and remove
     void removeEntity(EntityId id) {
-        assert(id < entities.size());
+        assert(id < size);
 
-        entities.erase(std::remove(entities.begin(), entities.end(), id), entities.end());
+        entities.erase(entities.begin() + id);
 
         componentStorage.removeEntity(id);
-        entityBitsets[id].reset();
         idPool.remove(id);
         size--;
     }
@@ -73,7 +79,7 @@ public:
         componentStorage.template add<TComponent>(component, id);
 
         auto componentType = TypeManager::getTypeFor<TComponent>();
-        entityBitsets[id][componentType.bitIndex] = true;
+        getEntity(id).signature[componentType.bitIndex] = true;
     }
 
     template <typename TComponent>
@@ -81,62 +87,75 @@ public:
         assert(id < entities.size());
 
         auto componentType = TypeManager::getTypeFor<TComponent>();
-        return entityBitsets[id][componentType.bitIndex];
+        return getEntity(id).signature[componentType.bitIndex];
     }
 
     template <typename TComponent>
     TComponent& getComponent(EntityId id) {
-        assert(hasComponent<TComponent>(id));
         return componentStorage.template getComponent<TComponent>(id);
     }
 
     template <typename TComponent>
     void removeComponent(EntityId id) {
-        assert(hasComponent<TComponent>(id));
-
         componentStorage.template removeComponent<TComponent>(id);
 
         auto componentType = TypeManager::getTypeFor<TComponent>();
-        entityBitsets[id][componentType.bitIndex] = false;
+        getEntity(id).signature[componentType.bitIndex] = false;
     }
 
     // SIGNATURES
 
-    template <typename TSignature>
+    template <typename... TComponents>
     bool matchesSignature(EntityId id) {
-        auto bitset = TSignature::getBitset();
-        return (bitset & entityBitsets[id]) == bitset;
+        Bitset signature;
+        auto list = {(signature = (signature | TypeManager::getTypeFor<TComponents>().bit))...};
+        auto entity = getEntity(id);
+        return (signature & entity.signature) == signature;
     }
 
-    template <typename TFunction>
-    void forEntities(TFunction&& function) {
-        for (auto entity : entities) {
-            function(entity);
+    // Implementation borrowed from EntityX
+    template <typename T> struct identity { using type = T; };
+
+    void forEntities(typename identity<std::function<void(EntityId)>>::type function) {
+        for (auto entityId : entities) {
+            /* function(entityId); */
         }
     }
 
-    template <typename TSignature, typename TFunction>
-    void forEntitiesMatching(TFunction&& function) {
-        forEntities([this, &function](auto& entity) {
-            if (matchesSignature<TSignature>(entity)) {
-                expandSignatureCall<TSignature>(entity, function);
+    /* // Is this faster than passing a std::function? Can't be, right?*/
+    /* template <typename TFunction> */
+    /* void forEntities(TFunction&& function) { */
+    /*     for (auto entity : entities) { */
+    /*         function(entity); */
+    /*     } */
+    /* } */
+
+    template <typename... TComponents>
+    void forEntitiesMatching(typename identity<std::function<void(Entity, TComponents&...)>>::type function) {
+        forEntities([this, &function](auto entityId) {
+            if (matchesSignature<TComponents...>(entityId)) {
+                using Helper = ExpandCallHelper<TComponents...>;
+                Helper::call(entityId, *this, function);
             }
         });
     }
+
+    template <typename... Ts>
+    struct ExpandCallHelper {
+        static void call(EntityId entityId, ThisType& mgr, typename identity<std::function<void(Entity entity, Ts&...)>>::type function) {
+            function(mgr.getEntity(entityId), mgr.getComponent<Ts>(entityId)...);
+        }
+    };
 
     // MANAGER
 
     void resize(std::size_t newCapacity) {
         assert(newCapacity > capacity);
 
-        // We now call push_back or emplace_back. This means the vector will
-        // be resized each time an entity is added or removed.
-        //entities.resize(newCapacity);
-
-        componentStorage.resize(newCapacity);
         capacity = newCapacity;
-
-        entityBitsets.resize(newCapacity);
+        idPool.resize(capacity);
+        entities.resize(capacity);
+        componentStorage.resize(capacity);
     }
 
     void resizeIfNeeded(std::size_t numNewEntities) {
@@ -148,37 +167,18 @@ public:
 private:
     std::size_t capacity {0};
     std::size_t size {0};
+    IdPool idPool {0};
 
     // Entity vector
     // @TODO: This needs to be sorted by dead or alive, or we need multiple vectors
     // for different states. Might use entity cache.
-    std::vector<EntityId> entities;
-
-    // Stores the bitset for each entity
-    std::vector<Bitset> entityBitsets;
+    // Also, might implement handles.
+    std::vector<Entity> entities;
 
     // Component storage
     ComponentStorage<TArgs...> componentStorage;
 
-    // ID pool
-    IdPool idPool;
 
-    template <typename... Ts>
-    struct ExpandCallHelper;
-
-    template <typename T, typename TF>
-    void expandSignatureCall(EntityId id, TF&& function) {
-        using Helper = util::Rename<ExpandCallHelper, T>;
-        Helper::call(getEntity(id), *this, function);
-    }
-
-    template <typename... Ts>
-    struct ExpandCallHelper {
-        template <typename TF>
-        static void call(Entity entity, ThisType& mgr, TF&& function) {
-            function(entity, mgr.getComponent<Ts>(entity.id)...);
-        }
-    };
 };
 
 }

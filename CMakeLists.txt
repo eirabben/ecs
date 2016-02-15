@@ -1,26 +1,21 @@
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.4 FATAL_ERROR)
 project(Ecs VERSION 0.2 LANGUAGES CXX)
 
-# @TODO: Probably need to add more
-add_library(Ecs
-    src/TypeManager.cpp)
+file(GLOB_RECURSE ECS_SRC "*.hpp" "*.cpp")
+add_library(ecs ${ECS_SRC})
 
-target_include_directories(Ecs PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-    PRIVATE src)
+#target_include_directories(ecs PUBLIC
+#$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#$<INSTALL_INTERFACE:include>
+#PRIVATE src)
 
-# Use one of these:
-target_compile_features(Ecs
-    PUBLIC cxx_auto_type
-    PRIVATE cxx_variadic_templates)
-# set(TARGET Ecs PROPERTY CXX_STANDARD 14)
+set_property(TARGET ecs PROPERTY CXX_STANDARD 14)
 
-install(TARGETS Ecs
-    ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin)
-install(DIRECTORY include/ DESTINATION include)
+#install(TARGETS ecs
+#ARCHIVE DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+#LIBRARY DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+#RUNTIME DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+#install(DIRECTORY include/ DESTINATION ${PROJECT_INCLUDE_DIRECTORY})
 
-export(TARGETS Ecs FILE EcsConfig.cmake)
+#export(TARGETS ecs FILE EcsConfig.cmake)
 
