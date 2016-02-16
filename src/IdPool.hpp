@@ -15,13 +15,14 @@ public:
     }
 
     auto create() {
-        for (std::size_t i{1}; i < capacity; i++) {
+        for (int i = 0; i < capacity; i++) {
             if (!inUse[i]) {
                 inUse[i] = true;
                 size++;
                 return Id(i);
             }
         }
+        return Id{0};
     }
 
     void remove(Id id) {
