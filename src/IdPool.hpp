@@ -1,49 +1,78 @@
 #pragma once
 
-#include <algorithm>
 #include <vector>
+#include <cassert>
+
+#include "Entity.hpp"
 
 namespace ecs {
 
+constexpr int defaultPoolSize {100};
+
 class IdPool {
-using Id = unsigned int;
 
 public:
-    IdPool() {}
-    IdPool(std::size_t initialCapacity) {
-        resize(initialCapacity);
+    IdPool() {
+        resize(defaultPoolSize);
+    }
+
+    IdPool(std::size_t capacity) {
+        resize(capacity);
     }
 
     auto create() {
-        for (int i = 0; i < capacity; i++) {
-            if (!inUse[i]) {
-                inUse[i] = true;
-                size++;
-                return Id(i);
-            }
+        Id id;
+
+        if (free.empty()) {
+            id.index = nextIndex++;
+            id.counter = 1;
+            pool[id.index] = id;
+        } else {
+            unsigned int index = free.back();
+            id = pool[index];
+            free.pop_back();
         }
-        return Id{0};
+
+        return id;
     }
 
     void remove(Id id) {
-        inUse[id] = false;
-        size--;
+        if (isValid(id)) {
+            pool[id.index].counter++;
+            free.push_back(id.index);
+        }
     }
 
-    void resize(std::size_t newCapacity) {
-        capacity = newCapacity; 
-        inUse.resize(capacity);
+    auto get(unsigned int index) {
+        assert(index < pool.size());
+        assert(pool[index].counter > 0);
+
+        return pool[index];
     }
 
-    void reset() {
-        std::fill(inUse.begin(), inUse.end(), false);
-        size = 0;
+    bool isValid(Id id) {
+        return (id.counter == pool[id.index].counter);
+    }
+
+    auto getCapacity() {
+        return pool.size();
+    }
+
+    void resize(std::size_t capacity) {
+        pool.resize(capacity);
+    }
+
+    void clear() {
+        nextIndex = 0;
+        pool.clear();
+        free.clear();
+        pool.resize(defaultPoolSize);
     }
 
 private:
-    std::size_t size {0};
-    std::size_t capacity {0};
-    std::vector<bool> inUse;
+    unsigned int nextIndex {0};
+    std::vector<Id> pool;
+    std::vector<unsigned int> free;
 };
 
 }

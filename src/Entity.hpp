@@ -2,14 +2,24 @@
 
 namespace ecs {
 
-using Entity = unsigned int;
+struct Id {
+    Id() {}
+    Id(unsigned int index, unsigned int counter) :
+        index(index),
+        counter(counter) {}
 
-/* struct Entity { */
-/*     using Id = unsigned int; */
-/*     Id id; */
+    unsigned int index {0};
+    unsigned int counter {0};
+};
 
-/*     explicit Entity(Id id) : id(id) {} */
-/*     Entity(const Entity& other) : id(other.id) {} */
-/* }; */
+struct Entity {
+    const Id id;
+    // ManagerType& manager;
+
+    // Manager access functions
+    // - Signature matching
+    // - Component access
+    // - Kill entity
+};
 
 }
