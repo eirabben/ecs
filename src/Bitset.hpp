@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Settings.hpp"
 #include <bitset>
+
+constexpr int defaultBitsetSize {32};
 
 namespace ecs {
 

@@ -3,16 +3,16 @@
 #include "Bitset.hpp"
 #include "ComponentStorage.hpp"
 #include "Entity.hpp"
-#include "EntityHandle.hpp"
+#include "Handle.hpp"
 #include "IdPool.hpp"
-#include "Settings.hpp"
-#include "Signature.hpp"
 #include "TypeManager.hpp"
 
 #include <vector>
 #include <algorithm>
 #include <utility>
 #include <cassert>
+
+#include <iostream>
 
 constexpr std::size_t defaultCapacity {100};
 constexpr std::size_t defaultCapacityIncrease {100};
@@ -22,12 +22,27 @@ namespace ecs {
 template <typename... TArgs>
 class Manager {
     using ThisType = Manager<TArgs...>;
-    using EntityHandleType = EntityHandle<ThisType>;
-    using EntityId = unsigned int;
+    using HandleType = Handle<ThisType>;
 
 public:
     Manager() {
         resize(defaultCapacity);
+    }
+
+    // HANDLES
+
+    auto createHandle() {
+        HandleType handle{*this, createEntity()};
+        return handle;
+    }
+
+    auto getHandle(unsigned int id) {
+        return getHandle(getEntity(id));
+    }
+
+    auto getHandle(Entity entity) {
+        HandleType handle{*this, entity};
+        return handle;
     }
 
     // ENTITIES
@@ -35,115 +50,100 @@ public:
     auto createEntity() {
         resizeIfNeeded(1);
 
-        auto id = idPool.create();
-        Entity entity {id};
-        entities[id] = entity;
+        Entity entity {idPool.create()};
+        entities[entity.id] = entity;
 
         size++;
-
-        return getEntity(id);
+        return getEntity(entity.id);
     }
 
-    auto createHandle() {
-        SlimHandle h;
-        EntityHandleType eh {*this, h};
-    }
-
-    auto getEntity(EntityId id) {
-        assert(id < size);
-
+    auto getEntity(unsigned int id) {
         return entities[id];
     }
 
-    // @TODO: There is a difference between kill and destroy and remove
-    void removeEntity(EntityId id) {
-        assert(id < size);
+    void killEntity(Entity entity) {
+        componentStorage.removeEntity(entity.id);
+        entitySignatures[entity.id].reset();
+        idPool.remove(entity.id);
 
-        entities.erase(entities.begin() + id);
-
-        componentStorage.removeEntity(id);
-        idPool.remove(id);
+        entities.erase(entities.begin() + entity.id);
         size--;
     }
 
-    void removeEntity(Entity& entity) {
-        removeEntity(entity.id);
+    void killEntity(HandleType& handle) {
+        killEntity(handle.entity);
     }
+
+    Bitset getSignature(Entity entity) {
+        return entitySignatures[entity.id];
+    }
+
     
     // COMPONENTS
 
     template <typename TComponent>
-    void addComponent(EntityId id, TComponent component) {
-        assert(id < entities.size());
-
-        componentStorage.template add<TComponent>(component, id);
+    void addComponent(Entity entity, TComponent component) {
+        componentStorage.template add<TComponent>(component, entity.id);
 
         auto componentType = TypeManager::getTypeFor<TComponent>();
-        getEntity(id).signature[componentType.bitIndex] = true;
+        entitySignatures[entity.id][componentType.bitIndex] = true;
     }
 
     template <typename TComponent>
-    bool hasComponent(EntityId id) {
-        assert(id < entities.size());
-
+    bool hasComponent(Entity entity) {
         auto componentType = TypeManager::getTypeFor<TComponent>();
-        return getEntity(id).signature[componentType.bitIndex];
+        return entitySignatures[entity.id][componentType.bitIndex];
     }
 
     template <typename TComponent>
-    TComponent& getComponent(EntityId id) {
-        return componentStorage.template getComponent<TComponent>(id);
+    TComponent& getComponent(Entity entity) {
+        return componentStorage.template getComponent<TComponent>(entity.id);
     }
 
     template <typename TComponent>
-    void removeComponent(EntityId id) {
-        componentStorage.template removeComponent<TComponent>(id);
+    void removeComponent(Entity entity) {
+        componentStorage.template removeComponent<TComponent>(entity.id);
 
         auto componentType = TypeManager::getTypeFor<TComponent>();
-        getEntity(id).signature[componentType.bitIndex] = false;
+        entitySignatures[entity.id][componentType.bitIndex] = false;
     }
 
     // SIGNATURES
 
     template <typename... TComponents>
-    bool matchesSignature(EntityId id) {
+    bool matchesSignature(Entity entity) {
+        std::cout << "Checking match\n";
         Bitset signature;
         auto list = {(signature = (signature | TypeManager::getTypeFor<TComponents>().bit))...};
-        auto entity = getEntity(id);
-        return (signature & entity.signature) == signature;
+        return (signature & entitySignatures[entity.id]) == signature;
     }
 
     // Implementation borrowed from EntityX
     template <typename T> struct identity { using type = T; };
 
-    void forEntities(typename identity<std::function<void(EntityId)>>::type function) {
-        for (auto entityId : entities) {
-            /* function(entityId); */
+    void forEntities(typename identity<std::function<void(Entity)>>::type function) {
+        std::cout << "forEntities\n";
+        for (auto entity : entities) {
+            function(entity);
         }
     }
 
-    /* // Is this faster than passing a std::function? Can't be, right?*/
-    /* template <typename TFunction> */
-    /* void forEntities(TFunction&& function) { */
-    /*     for (auto entity : entities) { */
-    /*         function(entity); */
-    /*     } */
-    /* } */
-
     template <typename... TComponents>
-    void forEntitiesMatching(typename identity<std::function<void(Entity, TComponents&...)>>::type function) {
-        forEntities([this, &function](auto entityId) {
-            if (matchesSignature<TComponents...>(entityId)) {
+    void forEntitiesMatching(typename identity<std::function<void(HandleType, TComponents&...)>>::type function) {
+        std::cout << "forEntitiesMatching\n";
+        forEntities([this, &function](auto entity) {
+            if (matchesSignature<TComponents...>(entity)) {
+                std::cout << "Found match\n";
                 using Helper = ExpandCallHelper<TComponents...>;
-                Helper::call(entityId, *this, function);
+                Helper::call(entity, *this, function);
             }
         });
     }
 
     template <typename... Ts>
     struct ExpandCallHelper {
-        static void call(EntityId entityId, ThisType& mgr, typename identity<std::function<void(Entity entity, Ts&...)>>::type function) {
-            function(mgr.getEntity(entityId), mgr.getComponent<Ts>(entityId)...);
+        static void call(Entity entity, ThisType& mgr, typename identity<std::function<void(HandleType entity, Ts&...)>>::type function) {
+            function(mgr.getHandle(entity), mgr.getComponent<Ts>(entity)...);
         }
     };
 
@@ -154,7 +154,8 @@ public:
 
         capacity = newCapacity;
         idPool.resize(capacity);
-        entities.resize(capacity);
+        entities.reserve(capacity);
+        entitySignatures.resize(capacity);
         componentStorage.resize(capacity);
     }
 
@@ -174,6 +175,7 @@ private:
     // for different states. Might use entity cache.
     // Also, might implement handles.
     std::vector<Entity> entities;
+    std::vector<Bitset> entitySignatures;
 
     // Component storage
     ComponentStorage<TArgs...> componentStorage;

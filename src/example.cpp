@@ -19,9 +19,11 @@ struct CVelocity {
 };
 
 using Manager = ecs::Manager<CPosition, CVelocity>;
+using Entity = ecs::Handle<Manager>;
 
 struct Processor {
     void update(Manager& mgr) {
+        std::cout << "Updating\n";
         mgr.forEntitiesMatching<CPosition>(
         [](auto entity, auto& pos) {
             std::cout << pos.x << ", " << pos.y << "\n";
@@ -33,9 +35,21 @@ using IdPool = ecs::IdPool;
 
 int main() {
     // Create a manager object
-    Manager manager;
+    Manager mgr;
 
-    manager.createHandle();
+    auto player = mgr.createHandle();
+    std::cout << "Bitset: " << player.getSignature() << "\n";
+    player.addComponent<CPosition>({1.0f, 2.0f})
+        .addComponent<CVelocity>({3.0f});
+    std::cout << "Bitset: " << player.getSignature() << "\n";
+
+    auto& pos = player.getComponent<CPosition>();
+    std::cout << pos.x << ", " << pos.y << "\n";
+
+    auto hnd = mgr.getHandle()
+
+    auto ball = mgr.createHandle()
+        .addComponent<CPosition>({5.0f, 7.0f});
 
     // Create an entity, and add some components
     /* auto& entity = manager.createEntity(); */
@@ -57,8 +71,8 @@ int main() {
 /*     entity.removeComponent<CVelocity>(); */
 
     // Iterate over entities with lambdas
-    /* Processor processor; */
-    /* processor.update(manager); */
+    Processor processor;
+    processor.update(mgr);
 
 /*     // Remove an entity */
 /*     manager.removeEntity(entity); */

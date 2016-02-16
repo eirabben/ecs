@@ -1,17 +1,15 @@
 #pragma once
 
-#include "Bitset.hpp"
-
 namespace ecs {
 
-struct Entity {
-    using EntityId = unsigned int;
+using Entity = unsigned int;
 
-    Entity() {}
-    Entity(EntityId id) : id(id) {}
+/* struct Entity { */
+/*     using Id = unsigned int; */
+/*     Id id; */
 
-    EntityId id;
-    Bitset signature;
-};
+/*     explicit Entity(Id id) : id(id) {} */
+/*     Entity(const Entity& other) : id(other.id) {} */
+/* }; */
 
 }
