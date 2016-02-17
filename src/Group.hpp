@@ -1,16 +1,36 @@
-#pragma once
+/* #pragma once */
 
-#include <vector>
+/* #include "Bitset.hpp" */
+/* #include "Entity.hpp" */
 
-namespace ecs {
+/* namespace ecs { */
 
-template <typename... TComponents>
-class Group {
+/* class Group { */
+/* public: */
+/*     Group() { */
 
-public:
+/*     } */
 
-private:
+/*     void addEntity(Id id) { */
+/*         entities.push_back(id); */
+/*     } */
 
-}
+/*     void removeEntity(Id id) { */
+/*         entities.erase(std::remove(entities.begin(), entities.end(), id), entities.end()); */
+/*     } */
 
-}
+/*     Bitset getSignature() { */
+/*         return signature; */
+/*     } */
+
+/*     bool matches(Bitset entitySignature) { */
+/*         return (signature & entitySignature) == signature; */
+/*     } */
+
+
+/* private: */
+/*     std::vector<Id> entities; */
+/*     Bitset signature; */
+/* } */
+
+/* } */

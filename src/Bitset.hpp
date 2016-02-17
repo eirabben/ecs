@@ -2,10 +2,9 @@
 
 #include <bitset>
 
-constexpr int defaultBitsetSize {32};
-
 namespace ecs {
 
+constexpr int defaultBitsetSize {32};
 using Bitset = std::bitset<defaultBitsetSize>;
 
 }

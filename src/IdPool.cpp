@@ -1,4 +1,6 @@
 #include "IdPool.hpp"
+#include <cassert>
+
 namespace ecs {
 
 IdPool::IdPool() {

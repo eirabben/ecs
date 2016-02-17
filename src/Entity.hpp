@@ -12,6 +12,11 @@ struct Id {
         return index == other.index && counter == other.counter;
     }
 
+    // TODO: Could use a smaller size for these, and add bitwise operations. This would be good for performance and memory footprint.
+    // Look here:
+    // https://gamedev.stackexchange.com/questions/58376/allocating-entities-within-an-entity-system
+    // http://gamesfromwithin.com/managing-data-relationships
+    // https://gamedev.stackexchange.com/questions/33888/what-is-the-most-efficient-container-to-store-dynamic-game-objects-in<Paste>
     unsigned int index {0};
     unsigned int counter {0};
 };
