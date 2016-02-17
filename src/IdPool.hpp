@@ -1,48 +1,36 @@
 #pragma once
 
-#include <algorithm>
 #include <vector>
+#include <cassert>
+
+#include "Entity.hpp"
 
 namespace ecs {
 
+constexpr int defaultPoolSize {100};
+
 class IdPool {
-using Id = unsigned int;
+    using Index = unsigned int;
 
 public:
-    IdPool() {}
-    IdPool(std::size_t initialCapacity) {
-        resize(initialCapacity);
-    }
+    IdPool();
+    IdPool(std::size_t capacity);
 
-    auto create() {
-        for (std::size_t i{1}; i < capacity; i++) {
-            if (!inUse[i]) {
-                inUse[i] = true;
-                size++;
-                return Id(i);
-            }
-        }
-    }
+    // Ids
+    Id create();
+    void remove(Id id);
+    Id get(Index index);
+    bool isValid(Id id);
 
-    void remove(Id id) {
-        inUse[id] = false;
-        size--;
-    }
-
-    void resize(std::size_t newCapacity) {
-        capacity = newCapacity; 
-        inUse.resize(capacity);
-    }
-
-    void reset() {
-        std::fill(inUse.begin(), inUse.end(), false);
-        size = 0;
-    }
+    // Pool
+    std::size_t getCapacity();
+    void resize(std::size_t capacity);
+    void clear();
 
 private:
-    std::size_t size {0};
-    std::size_t capacity {0};
-    std::vector<bool> inUse;
+    Index nextIndex {0};
+    std::vector<Id> pool;
+    std::vector<Index> free;
 };
 
 }
