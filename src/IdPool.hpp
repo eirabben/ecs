@@ -50,6 +50,10 @@ public:
         return pool[index];
     }
 
+    auto& getActive() {
+        return pool;
+    }
+
     bool isValid(Id id) {
         return (id.counter == pool[id.index].counter);
     }
